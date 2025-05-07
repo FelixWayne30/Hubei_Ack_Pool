@@ -33,6 +33,10 @@ public abstract class BaseController {
         return new ResponseResult<>(HttpStatus.INTERNAL_SERVER_ERROR.value(), failure);
     }
 
+    public Object renderError(int code, String failure) {
+        return new ResponseResult<>(code, failure);
+    }
+
     public Object renderFlow(Object flow) {
         return new ResponseResult<>(HttpStatus.TOO_MANY_REQUESTS.value(), ResponseType.FLOW.getMsg(), flow);
     }

@@ -7,7 +7,9 @@ import java.util.Objects;
 
 @Mapper
 public interface MapInfoMapper {
+    @Select("select topic_id,title from topics")
+    List<Map<String, Objects>> getTopics();
 
-    @Select("select * from map")
-    List<Map<String, Objects>> getAllMapInfoList();
+    @Select("select * from maps where topic_id = uuid(#{group_id})")
+    List<Map<String, Objects>> getMapsByGroupId(@Param("group_id") String group_id);
 }
