@@ -48,8 +48,6 @@ public class MapInfoService {
                 outputDir.getAbsolutePath()+"output"
         );
 
-        System.out.println(tmpFile.getAbsolutePath().substring(0, tmpFile.getAbsolutePath().length() - 4)+" "+outputDir.getAbsolutePath()+"\\output");
-
         Process process;
         try{
             process = builder.inheritIO().start();
