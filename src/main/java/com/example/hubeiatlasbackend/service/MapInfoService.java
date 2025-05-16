@@ -29,42 +29,4 @@ public class MapInfoService {
 
     public List<Map<String, Objects>> getMapsByGroupId(String group_id) { return mapInfoMapper.getMapsByGroupId(group_id); }
 
-    public String uploadMap(MultipartFile file) {
-        File tmpFile;
-        try {
-            tmpFile = File.createTempFile("tmp", ".jpg");
-            file.transferTo(tmpFile);
-        } catch (IOException e) {
-            return "读取文件异常：" + e.toString();
-        }
-
-
-        File outputDir = new File("tiles_output");
-        if (!outputDir.exists()) outputDir.mkdirs();
-
-        ProcessBuilder builder = new ProcessBuilder(
-                "src/main/resources/static/transfer2tif.bat",
-                tmpFile.getAbsolutePath().substring(0, tmpFile.getAbsolutePath().length() - 4),
-                outputDir.getAbsolutePath()+"output"
-        );
-
-        Process process;
-        try{
-            process = builder.inheritIO().start();
-        }catch(IOException e){
-            return "转换异常：" + e.toString();
-        }
-
-        try {
-            int exitCode = process.waitFor();
-            if (exitCode != 0) {
-                return "切片失败"+ String.valueOf(exitCode);
-            }
-        } catch (InterruptedException e) {
-            return "切片异常:" + e.toString();
-        }
-
-        return outputDir.toString();
-
-    }
 }

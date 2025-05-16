@@ -17,12 +17,10 @@ public class PublishController extends BaseController{
     @PostMapping("/publish-geotiff")
     public Object publishGeoTiff(
             @RequestParam("file") MultipartFile file,
-            @RequestParam("type") String type,
             @RequestParam("map_id") String map_id
     ){
         try {
-            String fileName = file.getOriginalFilename();
-            return renderSuccess(PublishService.publishGeoTiff(file,type,map_id));
+            return renderSuccess(PublishService.publishGeoTiff(file,map_id));
         }catch (Exception e){
             return renderError(e.getMessage());
         }

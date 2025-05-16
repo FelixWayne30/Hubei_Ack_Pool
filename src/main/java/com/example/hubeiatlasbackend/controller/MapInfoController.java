@@ -32,13 +32,4 @@ public class MapInfoController extends BaseController {
         }
     }
 
-    @PostMapping("/upload/map")
-    public Object uploadMap(@RequestParam("file")MultipartFile file){
-        try {
-            return renderSuccess(mapInfoService.uploadMap(file));
-        }catch (Exception e){
-            return renderError(e.getMessage());
-        }
-    }
-
 }
