@@ -7,10 +7,10 @@ import org.geotools.coverage.grid.GridCoverageFactory;
 import org.geotools.gce.geotiff.GeoTiffWriter;
 import org.geotools.geometry.GeneralEnvelope;
 import org.geotools.referencing.CRS;
-import org.geotools.referencing.crs.DefaultGeographicCRS;
 import org.opengis.referencing.FactoryException;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -18,12 +18,22 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
 import javax.imageio.ImageIO;
+import javax.imageio.ImageReader;
+import javax.imageio.stream.ImageInputStream;
 import java.awt.image.BufferedImage;
+import java.io.InputStream;
+
+import java.awt.*;
+import java.awt.color.ColorSpace;
+import java.awt.color.ICC_ColorSpace;
+import java.awt.color.ICC_Profile;
+import java.awt.image.*;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Iterator;
 
 @Service
 @Slf4j
@@ -52,10 +62,27 @@ public class PublishService {
     private String workspace;
 
     public String publishGeoTiff(MultipartFile file, String type, String map_id) throws IOException, FactoryException {
-        // 1.1 转换 JPG 为 GeoTIFF 文件并保存
-        BufferedImage image = ImageIO.read(file.getInputStream());
-        int width = image.getWidth();
-        int height = image.getHeight();
+        ImageInputStream input = ImageIO.createImageInputStream(file.getInputStream());
+        Iterator<ImageReader> readers = ImageIO.getImageReaders(input);
+        if (!readers.hasNext()) {
+            throw new IllegalArgumentException("Unsupported image format.");
+        }
+
+        ImageReader reader = readers.next();
+        log.info("Using ImageReader: " + reader.getClass().getName());
+        reader.setInput(input);
+
+        // 使用 TwelveMonkeys 读取图像（自动解析 ICC）
+        BufferedImage cmykImage = reader.read(0);
+        int width = cmykImage.getWidth();
+        int height = cmykImage.getHeight();
+
+        // 构建 RGB 目标图像
+        BufferedImage rgbImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+
+        // 将 CMYK 图像转换到 RGB 空间（使用源图内嵌 ICC 或自动色彩空间）
+        ColorConvertOp colorConvert = new ColorConvertOp(null);
+        colorConvert.filter(cmykImage, rgbImage); // 源 ICC 可自动从 cmykImage 获取
 
         // 1.2 设置任意参考的经纬度范围（比如经度从 0 开始，跨度 1 度）
         double xmin = 0;
@@ -74,7 +101,7 @@ public class PublishService {
 
         // 1.5 创建 GridCoverage（带坐标图层）
         GridCoverageFactory factory = new GridCoverageFactory();
-        GridCoverage2D coverage = factory.create("GeoTIFF", image, envelope);
+        GridCoverage2D coverage = factory.create("GeoTIFF", rgbImage, envelope);
 
         // 获取原始文件名（不带扩展名）使用原始名称命名 tiff 文件
         String originalName = file.getOriginalFilename();

@@ -78,6 +78,22 @@
             <artifactId>gt-epsg-hsql</artifactId>
             <version>24.0</version>
         </dependency>
+        <dependency>
+            <groupId>com.twelvemonkeys.imageio</groupId>
+            <artifactId>imageio-core</artifactId>
+            <version>3.8.2</version>
+        </dependency>
+        <dependency>
+            <groupId>com.twelvemonkeys.imageio</groupId>
+            <artifactId>imageio-jpeg</artifactId>
+            <version>3.8.2</version>
+        </dependency>
+        <dependency>
+            <groupId>com.twelvemonkeys.common</groupId>
+            <artifactId>common-image</artifactId>
+            <version>3.8.2</version>
+        </dependency>
+
     </dependencies>
 
     <repositories>
@@ -85,6 +101,11 @@
             <id>osgeo</id>
             <name>OSGeo GeoTools repository</name>
             <url>https://repo.osgeo.org/repository/release/</url>
+        </repository>
+        <repository>
+            <id>tsinghua</id>
+            <name>Tsinghua Maven Mirror</name>
+            <url>https://mirrors.tuna.tsinghua.edu.cn/maven/</url>
         </repository>
     </repositories>
 
