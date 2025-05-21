@@ -4,13 +4,17 @@ import com.example.hubeiatlasbackend.mapper.PublishMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.geotools.coverage.grid.GridCoverage2D;
 import org.geotools.coverage.grid.GridCoverageFactory;
+import org.geotools.coverage.grid.io.imageio.GeoToolsWriteParams;
+import org.geotools.gce.geotiff.GeoTiffFormat;
+import org.geotools.gce.geotiff.GeoTiffWriteParams;
 import org.geotools.gce.geotiff.GeoTiffWriter;
 import org.geotools.geometry.GeneralEnvelope;
 import org.geotools.referencing.CRS;
+import org.opengis.parameter.GeneralParameterValue;
+import org.opengis.parameter.ParameterValueGroup;
 import org.opengis.referencing.FactoryException;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -21,19 +25,18 @@ import javax.imageio.ImageIO;
 import javax.imageio.ImageReader;
 import javax.imageio.stream.ImageInputStream;
 import java.awt.image.BufferedImage;
-import java.io.InputStream;
 
-import java.awt.*;
-import java.awt.color.ColorSpace;
-import java.awt.color.ICC_ColorSpace;
-import java.awt.color.ICC_Profile;
 import java.awt.image.*;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Service
 @Slf4j
@@ -103,8 +106,17 @@ public class PublishService {
         geoTiffFile.deleteOnExit(); // 程序退出时自动清理
 
         // 6. 写入 GeoTIFF（可扩展加入 Overview）
+        GeoTiffWriteParams geoTiffWriteParams = new GeoTiffWriteParams();
+        geoTiffWriteParams.setCompressionMode(GeoToolsWriteParams.MODE_EXPLICIT);
+        geoTiffWriteParams.setCompressionType("Deflate");  // 设置压缩方式为 Deflate
+        geoTiffWriteParams.setCompressionQuality(1.0f);    // 无损压缩
+
+        GeoTiffFormat format = new GeoTiffFormat();
+        ParameterValueGroup params = format.getWriteParameters();
+        params.parameter(GeoTiffFormat.GEOTOOLS_WRITE_PARAMS.getName().toString()).setValue(geoTiffWriteParams);
+
         GeoTiffWriter writer = new GeoTiffWriter(geoTiffFile);
-        writer.write(coverage, null);
+        writer.write(coverage, params.values().toArray(new GeneralParameterValue[0]));
         writer.dispose();
 
         // 7. 上传至 GeoServer（PUT）
@@ -147,5 +159,36 @@ public class PublishService {
 
         // 9. 返回成功信息（可附加 WMS 预览地址）
         return map_id + " 构建 WMS 成功！";
+    }
+
+    public String insertBaseMapInfo(MultipartFile file, String type) throws IOException {
+        BufferedImage image = ImageIO.read(file.getInputStream());
+        if (image == null) {
+            throw new IOException("文件不是有效的图片格式");
+        }
+
+        int width = image.getWidth();
+        int height = image.getHeight();
+
+        // 获取中文图名
+        String originalFilename = file.getOriginalFilename();
+        String mapName = extractChineseName(originalFilename);
+
+        return PublishMapper.insertBaseMapInfo(mapName,type,width,height);
+    }
+
+    private String extractChineseName(String filename) {
+        // 去掉后缀
+        String nameWithoutExtension = filename.replaceAll("\\.jpg$|\\.jpeg$|\\.png$", "");
+
+        // 提取中文
+        Matcher matcher = Pattern.compile("[\u4e00-\u9fa5]+").matcher(nameWithoutExtension);
+        StringBuilder chineseName = new StringBuilder();
+
+        while (matcher.find()) {
+            chineseName.append(matcher.group());
+        }
+
+        return chineseName.toString();
     }
 }

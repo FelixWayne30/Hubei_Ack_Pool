@@ -10,6 +10,9 @@ public interface MapInfoMapper {
     @Select("select * from topics")
     List<Map<String, Objects>> getTopics();
 
+    @Select("select * from maps")
+    List<Map<String, Objects>> getMaps();
+
     @Select("select * from maps where topic_id = uuid(#{group_id})")
     List<Map<String, Objects>> getMapsByGroupId(@Param("group_id") String group_id);
 }

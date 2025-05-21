@@ -27,6 +27,10 @@ public class MapInfoService {
         return mapInfoMapper.getTopics();
     }
 
+    public List<Map<String, Objects>> getMaps() {
+        return mapInfoMapper.getMaps();
+    }
+
     public List<Map<String, Objects>> getMapsByGroupId(String group_id) { return mapInfoMapper.getMapsByGroupId(group_id); }
 
 }

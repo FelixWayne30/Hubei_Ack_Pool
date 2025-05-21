@@ -23,6 +23,16 @@ public class MapInfoController extends BaseController {
 
     }
 
+    @GetMapping("/mapinfo/maps")
+    public Object getMapsController(){
+        try {
+            return renderSuccess(mapInfoService.getMaps());
+        }catch (Exception e){
+            return renderError(e.getMessage());
+        }
+
+    }
+
     @GetMapping("/mapinfo/maps/{groupid}")
     public Object getMapsByGroupId(@PathVariable("groupid") String groupId) {
         try {
