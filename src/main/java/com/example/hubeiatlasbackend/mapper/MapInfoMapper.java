@@ -7,10 +7,10 @@ import java.util.Objects;
 
 @Mapper
 public interface MapInfoMapper {
-    @Select("select * from topics")
+    @Select("select * from topics ORDER BY sort_order")
     List<Map<String, Objects>> getTopics();
 
-    @Select("select * from maps")
+    @Select("select * from maps ORDER BY create_time")
     List<Map<String, Objects>> getMaps();
 
     @Select("select * from maps where topic_id = uuid(#{group_id})")

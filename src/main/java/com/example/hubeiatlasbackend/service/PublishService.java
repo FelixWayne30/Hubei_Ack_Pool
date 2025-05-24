@@ -31,10 +31,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -190,5 +187,48 @@ public class PublishService {
         }
 
         return chineseName.toString();
+    }
+
+    public boolean deleteMapFile(UUID id) {
+        String url = geoserverUrl + String.format(
+                "/workspaces/%s/coveragestores/%s?recurse=true",
+                workspace, id
+        );
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBasicAuth(username, password);
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        HttpEntity<String> entity = new HttpEntity<>(headers);
+
+        RestTemplate restTemplate = new RestTemplate();
+        ResponseEntity<String> response = restTemplate.exchange(
+                url, HttpMethod.DELETE, entity, String.class
+        );
+
+        if (response.getStatusCode().is2xxSuccessful()) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    public void deleteMapInfo(UUID id) {
+        PublishMapper.deleteMap(id);
+    }
+
+    public void editMapFile(MultipartFile file, UUID id) throws IOException {
+        BufferedImage image = ImageIO.read(file.getInputStream());
+        if (image == null) {
+            throw new IOException("文件不是有效的图片格式");
+        }
+
+        int width = image.getWidth();
+        int height = image.getHeight();
+
+        PublishMapper.editMapFileInfo(id,width,height);
+    }
+
+    public void editMapInfo(UUID id, String name, String description) {
+        PublishMapper.editMapInfo(id,name,description);
     }
 }
