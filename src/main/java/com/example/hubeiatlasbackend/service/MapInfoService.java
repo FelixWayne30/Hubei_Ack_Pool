@@ -2,19 +2,9 @@ package com.example.hubeiatlasbackend.service;
 
 import javax.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.io.FileSystemResource;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import com.example.hubeiatlasbackend.mapper.MapInfoMapper;
-import org.springframework.web.multipart.MultipartFile;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 @Service
 @Slf4j
@@ -31,6 +21,22 @@ public class MapInfoService {
         return mapInfoMapper.getMaps();
     }
 
-    public List<Map<String, Objects>> getMapsByGroupId(String group_id) { return mapInfoMapper.getMapsByGroupId(group_id); }
+    public List<Map<String, Objects>> getMapsByGroupId(UUID group_id) { return mapInfoMapper.getMapsByGroupId(group_id); }
 
+    public List<Map<String, Objects>> getMapsByMapId(UUID mapId) {
+        return mapInfoMapper.getMapsByMapId(mapId);
+    }
+
+    public void updateMapOrder(UUID topicId, UUID mapId, int mapRank) {
+        mapInfoMapper.updateMapOrder(topicId,mapId,mapRank);
+    }
+
+    public void addMaptoTopic(UUID topicId, UUID mapId, int mapRank) {
+        mapInfoMapper.addMaptoTopic(topicId,mapId,mapRank);
+    }
+
+    public void removeMapfromTopic(UUID topicId, UUID mapId, int mapRank) {
+        mapInfoMapper.removeMapfromTopic(topicId,mapId,mapRank);
+        mapInfoMapper.shiftMapRanksAfterDelete(topicId, mapRank);
+    }
 }
