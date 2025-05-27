@@ -93,4 +93,57 @@ public class MapInfoController extends BaseController {
         }
     }
 
+    @GetMapping("/mapinfo/addTopic")
+    public Object addTopic(
+            @RequestParam("name") String name,
+            @RequestParam("description") String description,
+            @RequestParam("order") int order
+    ) {
+        try {
+            mapInfoService.addTopic(name,description,order);
+            return renderSuccess();
+        }catch (Exception e){
+            return renderError(e.getMessage());
+        }
+    }
+
+    @GetMapping("/mapinfo/deleteTopic")
+    public Object deleteTopic(
+            @RequestParam("topic_id") UUID topic_id
+    ) {
+        try {
+            mapInfoService.deleteTopic(topic_id);
+            return renderSuccess();
+        }catch (Exception e){
+            return renderError(e.getMessage());
+        }
+    }
+
+    @GetMapping("/mapinfo/updateGroupOrder")
+    public Object updateGroupOrder(
+            @RequestParam("topic_id") UUID topic_id,
+            @RequestParam("order") int order
+    ) {
+        try {
+            mapInfoService.updateGroupOrder(topic_id,order);
+            return renderSuccess();
+        }catch (Exception e){
+            return renderError(e.getMessage());
+        }
+    }
+
+    @GetMapping("/mapinfo/editGroupInfo")
+    public Object editGroupInfo(
+            @RequestParam("id") UUID topic_id,
+            @RequestParam("name") String name,
+            @RequestParam("description") String description
+    ) {
+        try {
+            mapInfoService.editGroupInfo(topic_id,name,description);
+            return renderSuccess();
+        }catch (Exception e){
+            return renderError(e.getMessage());
+        }
+    }
+
 }
