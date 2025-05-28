@@ -39,4 +39,24 @@ public class MapInfoService {
         mapInfoMapper.removeMapfromTopic(topicId,mapId,mapRank);
         mapInfoMapper.shiftMapRanksAfterDelete(topicId, mapRank);
     }
+
+    public void removeAllMapsfromTopic(UUID topicId) {
+        mapInfoMapper.removeAllMapsfromTopic(topicId);
+    }
+
+    public void addTopic(String name, String description, int order) {
+        mapInfoMapper.addTopic(name,description,order);
+    }
+
+    public void deleteTopic(UUID topicId) {
+        mapInfoMapper.deleteTopic(topicId);
+    }
+
+    public void updateGroupOrder(UUID topicId, int order) {
+        mapInfoMapper.updateGroupOrder(topicId, order);
+    }
+
+    public void editGroupInfo(UUID topicId, String name, String description) {
+        mapInfoMapper.editGroupInfo(topicId,name,description);
+    }
 }

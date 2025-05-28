@@ -38,4 +38,19 @@ public interface MapInfoMapper {
           AND map_rank > #{mapRank}
     """)
     void shiftMapRanksAfterDelete(@Param("topicId") UUID topicId, @Param("mapRank") int mapRank);
+
+    @Delete("delete from topic_map where topic_id = #{topicId}")
+    void removeAllMapsfromTopic(@Param("topicId") UUID topicId);
+
+    @Insert("insert into topics(\"title\",\"description\",\"sort_order\") values(#{name},#{description},#{order}) ")
+    void addTopic(@Param("name") String name, @Param("description") String description, @Param("order")int order);
+
+    @Delete("delete from topics where topic_id = #{topicId}")
+    void deleteTopic(@Param("topicId")UUID topicId);
+
+    @Update("update topics set sort_order=#{order} where topic_id = #{topicId}")
+    void updateGroupOrder(@Param("topicId")UUID topicId, @Param("order")int order);
+
+    @Update("update topics set title = #{name}, description = #{description} where topic_id = #{topicId}")
+    void editGroupInfo(@Param("topicId")UUID topicId, @Param("name")String name, @Param("description")String description);
 }
