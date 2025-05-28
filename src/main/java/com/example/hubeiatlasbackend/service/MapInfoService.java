@@ -56,6 +56,12 @@ public class MapInfoService {
         mapInfoMapper.updateGroupOrder(topicId, order);
     }
 
+    public List<Map<String, Objects>> searchMaps(String query, int page, int size) {
+        String searchQuery = "%" + query + "%";
+        int offset = (page - 1) * size;
+        return mapInfoMapper.searchMaps(searchQuery, size, offset);
+    }
+
     public void editGroupInfo(UUID topicId, String name, String description) {
         mapInfoMapper.editGroupInfo(topicId,name,description);
     }

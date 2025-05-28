@@ -146,4 +146,15 @@ public class MapInfoController extends BaseController {
         }
     }
 
+    @GetMapping("/mapinfo/search")
+    public Object searchMaps(@RequestParam("query") String query,
+                             @RequestParam(value = "page", defaultValue = "1") int page,
+                             @RequestParam(value = "size", defaultValue = "20") int size) {
+        try {
+            return renderSuccess(mapInfoService.searchMaps(query, page, size));
+        } catch (Exception e) {
+            return renderError(e.getMessage());
+        }
+    }
+
 }

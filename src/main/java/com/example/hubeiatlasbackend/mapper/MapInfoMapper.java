@@ -8,6 +8,17 @@ import java.util.UUID;
 
 @Mapper
 public interface MapInfoMapper {
+
+    @Select("SELECT * FROM maps " +
+            "WHERE title ILIKE #{query} " +
+            "OR description ILIKE #{query} " +
+            "OR type ILIKE #{query} " +
+            "ORDER BY create_time DESC " +
+            "LIMIT #{limit} OFFSET #{offset}")
+    List<Map<String, Objects>> searchMaps(@Param("query") String query,
+                                          @Param("limit") int limit,
+                                          @Param("offset") int offset);
+
     @Select("select * from topics ORDER BY sort_order")
     List<Map<String, Objects>> getTopics();
 
@@ -48,7 +59,7 @@ public interface MapInfoMapper {
     @Delete("delete from topics where topic_id = #{topicId}")
     void deleteTopic(@Param("topicId")UUID topicId);
 
-    @Update("update topics set sort_order=#{order} where topic_id = #{topicId}")
+    @Update("update topics set sort_order = #{order} where topic_id = #{topicId}")
     void updateGroupOrder(@Param("topicId")UUID topicId, @Param("order")int order);
 
     @Update("update topics set title = #{name}, description = #{description} where topic_id = #{topicId}")
