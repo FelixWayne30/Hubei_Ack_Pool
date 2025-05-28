@@ -1,3 +1,4 @@
+// src/main/java/com/example/hubeiatlasbackend/service/UserService.java
 package com.example.hubeiatlasbackend.service;
 
 import com.example.hubeiatlasbackend.mapper.UserMapper;
@@ -23,14 +24,13 @@ public class UserService {
             // 用户已存在，更新信息
             UUID userId = (UUID) existingUser.get("user_id");
             userMapper.updateUserLoginInfo(userId, nickname, avatar);
-//            log.info("用户登录更新: {}", nickname);
             // 返回更新后的信息
             return userMapper.getUserInfo(userId);
         } else {
-            // 新用户，创建记录并返回userid
-            UUID newUserId = userMapper.createWechatUser(openid, nickname, avatar);
-//            log.info("新用户创建: {}, userId: {}", nickname, newUserId);
-            return userMapper.getUserInfo(newUserId);
+            // 新用户，创建记录
+            userMapper.createWechatUserNoReturn(openid, nickname, avatar);
+            // 查询新创建的用户信息并返回
+            return userMapper.getUserByOpenid(openid);
         }
     }
 

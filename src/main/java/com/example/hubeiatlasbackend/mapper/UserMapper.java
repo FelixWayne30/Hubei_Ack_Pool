@@ -1,3 +1,4 @@
+// src/main/java/com/example/hubeiatlasbackend/mapper/UserMapper.java
 package com.example.hubeiatlasbackend.mapper;
 
 import org.apache.ibatis.annotations.*;
@@ -17,13 +18,12 @@ public interface UserMapper {
             "FROM users WHERE user_id = #{userId}")
     Map<String, Object> getUserInfo(@Param("userId") UUID userId);
 
-    // 创建微信用户，返回生成的userid
+    // 创建微信用户（不返回UUID）
     @Insert("INSERT INTO users (nickname, avatar, openid, last_login_time) " +
-            "VALUES (#{nickname}, #{avatar}, #{openid}, CURRENT_TIMESTAMP) " +
-            "RETURNING user_id")
-    UUID createWechatUser(@Param("openid") String openid,
-                          @Param("nickname") String nickname,
-                          @Param("avatar") String avatar);
+            "VALUES (#{nickname}, #{avatar}, #{openid}, CURRENT_TIMESTAMP)")
+    void createWechatUserNoReturn(@Param("openid") String openid,
+                                  @Param("nickname") String nickname,
+                                  @Param("avatar") String avatar);
 
     // 更新用户登录信息
     @Update("UPDATE users SET nickname = #{nickname}, avatar = #{avatar}, " +
