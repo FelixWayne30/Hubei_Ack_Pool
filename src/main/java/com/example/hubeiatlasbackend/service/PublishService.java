@@ -29,6 +29,9 @@ import java.awt.image.BufferedImage;
 import java.awt.image.*;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
@@ -46,8 +49,8 @@ public class PublishService {
     @Value("${geoserver.rest_api_url}")
     private String geoserverUrl;
 
-    @Value("${geoserver.gwc}")
-    private String gwcUrl;
+    @Value("${geoserver.raw}")
+    private String raw;
 
     @Value("${geoserver.username}")
     private String username;
@@ -230,5 +233,27 @@ public class PublishService {
 
     public void editMapInfo(UUID id, String name, String description) {
         PublishMapper.editMapInfo(id,name,description);
+    }
+
+    public ResponseEntity<byte[]> getFullImage(UUID id, int width, int height) throws IOException {
+        String url = raw
+                +"/wms?service=WMS&version=1.1.0&request=GetMap&layers="+ workspace +":" + id.toString()
+                +"&bbox=0.0,0.0,1.0,"+ (height/(double)width)
+                +"&width="+ width +"&height="+ height +"&srs=EPSG%3A4326&styles=&format=image%2Fjpeg";
+        URL imageUrl = new URL(url);
+        HttpURLConnection conn = (HttpURLConnection) imageUrl.openConnection();
+        conn.setRequestMethod("GET");
+        conn.setConnectTimeout(20000);
+        conn.setReadTimeout(20000);
+
+        InputStream inputStream = conn.getInputStream();
+        byte[] imageBytes = inputStream.readAllBytes();
+        inputStream.close();
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.IMAGE_JPEG); // 或 MediaType.IMAGE_PNG
+        headers.setContentDisposition(ContentDisposition.attachment().filename("map.jpg").build());
+
+        return new ResponseEntity<>(imageBytes, headers, HttpStatus.OK);
     }
 }

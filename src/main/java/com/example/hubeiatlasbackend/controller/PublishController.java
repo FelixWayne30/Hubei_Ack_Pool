@@ -65,4 +65,17 @@ public class PublishController extends BaseController{
             return renderError(e.getMessage());
         }
     }
+
+    @GetMapping("/publish/getFullImage")
+    public Object getFullImage(
+            @RequestParam("id") UUID id,
+            @RequestParam("width") int width,
+            @RequestParam("height") int height
+    ){
+        try {
+            return PublishService.getFullImage(id,width,height);
+        }catch (Exception e){
+            return renderError(e.getMessage());
+        }
+    }
 }
