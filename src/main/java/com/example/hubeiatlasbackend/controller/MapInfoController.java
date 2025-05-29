@@ -93,6 +93,18 @@ public class MapInfoController extends BaseController {
         }
     }
 
+    @GetMapping("/mapinfo/removeAllMapsfromTopic")
+    public Object removeAllMapsfromTopic(
+            @RequestParam("topic_id") UUID topicId
+    ) {
+        try {
+            mapInfoService.removeAllMapsfromTopic(topicId);
+            return renderSuccess();
+        }catch (Exception e){
+            return renderError(e.getMessage());
+        }
+    }
+
     @GetMapping("/mapinfo/addTopic")
     public Object addTopic(
             @RequestParam("name") String name,
