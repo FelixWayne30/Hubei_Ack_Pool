@@ -3,7 +3,6 @@ package com.example.hubeiatlasbackend.service;
 import com.example.hubeiatlasbackend.mapper.CustomListMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
 import java.util.*;
@@ -22,7 +21,7 @@ public class CustomListService {
         try {
             return customListMapper.getUserLists(userId);
         } catch (Exception e) {
-            log.error("获取用户列表失败: userId={}, error={}", userId, e.getMessage());
+//            log.error("获取用户列表失败: userId={}, error={}", userId, e.getMessage());
             throw new RuntimeException("获取列表失败");
         }
     }
@@ -46,7 +45,7 @@ public class CustomListService {
             result.put("list_id", listId);
             return result;
         } catch (Exception e) {
-            log.error("创建列表失败: userId={}, name={}, error={}", userId, name, e.getMessage());
+//            log.error("创建列表失败: userId={}, name={}, error={}", userId, name, e.getMessage());
             throw new RuntimeException("创建列表失败");
         }
     }
@@ -68,7 +67,7 @@ public class CustomListService {
             int updated = customListMapper.updateList(listId, userId, name.trim(), description);
             return updated > 0;
         } catch (Exception e) {
-            log.error("更新列表失败: listId={}, userId={}, error={}", listId, userId, e.getMessage());
+//            log.error("更新列表失败: listId={}, userId={}, error={}", listId, userId, e.getMessage());
             throw new RuntimeException("更新列表失败");
         }
     }
@@ -81,7 +80,7 @@ public class CustomListService {
             int deleted = customListMapper.deleteList(listId, userId);
             return deleted > 0;
         } catch (Exception e) {
-            log.error("删除列表失败: listId={}, userId={}, error={}", listId, userId, e.getMessage());
+//            log.error("删除列表失败: listId={}, userId={}, error={}", listId, userId, e.getMessage());
             throw new RuntimeException("删除列表失败");
         }
     }
@@ -125,7 +124,7 @@ public class CustomListService {
             listInfo.put("maps", maps);
             return listInfo;
         } catch (Exception e) {
-            log.error("获取列表详情失败: listId={}, error={}", listId, e.getMessage());
+//            log.error("获取列表详情失败: listId={}, error={}", listId, e.getMessage());
             throw new RuntimeException("获取列表详情失败");
         }
     }
@@ -138,7 +137,7 @@ public class CustomListService {
             int count = customListMapper.checkMapInList(listId, mapId);
             return count > 0;
         } catch (Exception e) {
-            log.error("检查地图是否在列表中失败: listId={}, mapId={}, error={}", listId, mapId, e.getMessage());
+//            log.error("检查地图是否在列表中失败: listId={}, mapId={}, error={}", listId, mapId, e.getMessage());
             return false;
         }
     }
@@ -161,8 +160,8 @@ public class CustomListService {
             customListMapper.addMapToList(listId, mapId);
             return true;
         } catch (Exception e) {
-            log.error("添加地图到列表失败: listId={}, mapId={}, userId={}, error={}",
-                    listId, mapId, userId, e.getMessage());
+//            log.error("添加地图到列表失败: listId={}, mapId={}, userId={}, error={}",
+//                    listId, mapId, userId, e.getMessage());
             return false;
         }
     }
@@ -180,8 +179,8 @@ public class CustomListService {
             int removed = customListMapper.removeMapFromList(listId, mapId);
             return removed > 0;
         } catch (Exception e) {
-            log.error("从列表中移除地图失败: listId={}, mapId={}, userId={}, error={}",
-                    listId, mapId, userId, e.getMessage());
+//            log.error("从列表中移除地图失败: listId={}, mapId={}, userId={}, error={}",
+//                    listId, mapId, userId, e.getMessage());
             return false;
         }
     }
