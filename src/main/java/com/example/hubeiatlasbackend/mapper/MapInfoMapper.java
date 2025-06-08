@@ -64,4 +64,8 @@ public interface MapInfoMapper {
 
     @Update("update topics set title = #{name}, description = #{description} where topic_id = #{topicId}")
     void editGroupInfo(@Param("topicId")UUID topicId, @Param("name")String name, @Param("description")String description);
+    
+    @Select("select * from banners a left join maps b on a.map_id = b.map_id\n" +
+            "ORDER BY a.map_rank")
+    List<Map<String, Objects>> getBannerMaps();
 }

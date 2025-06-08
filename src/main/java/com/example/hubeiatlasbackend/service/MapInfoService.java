@@ -65,4 +65,7 @@ public class MapInfoService {
     public void editGroupInfo(UUID topicId, String name, String description) {
         mapInfoMapper.editGroupInfo(topicId,name,description);
     }
+    public List<Map<String, Objects>> getBannerMaps() {
+        return mapInfoMapper.getBannerMaps();
+    }
 }

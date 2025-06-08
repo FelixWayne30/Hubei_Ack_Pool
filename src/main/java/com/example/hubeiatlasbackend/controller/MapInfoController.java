@@ -21,7 +21,6 @@ public class MapInfoController extends BaseController {
         }catch (Exception e){
             return renderError(e.getMessage());
         }
-
     }
 
     @GetMapping("/mapinfo/maps")
@@ -165,6 +164,15 @@ public class MapInfoController extends BaseController {
         try {
             return renderSuccess(mapInfoService.searchMaps(query, page, size));
         } catch (Exception e) {
+            return renderError(e.getMessage());
+        }
+    }
+
+    @GetMapping("/mapinfo/bannerMaps")
+    public Object getBannerMapsController(){
+        try {
+            return renderSuccess(mapInfoService.getBannerMaps());
+        }catch (Exception e){
             return renderError(e.getMessage());
         }
     }
