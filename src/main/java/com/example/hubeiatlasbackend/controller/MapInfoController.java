@@ -177,4 +177,43 @@ public class MapInfoController extends BaseController {
         }
     }
 
+    @GetMapping("/mapinfo/updateBannerMapOrder")
+    public Object updateBannerMapOrder(
+            @RequestParam("mapId") UUID mapId,
+            @RequestParam("map_rank") int map_rank
+    ) {
+        try {
+            mapInfoService.updateBannerMapOrder(mapId,map_rank);
+            return renderSuccess();
+        }catch (Exception e){
+            return renderError(e.getMessage());
+        }
+    }
+
+    @GetMapping("/mapinfo/addMaptoBanner")
+    public Object addMaptoBanner(
+            @RequestParam("map_id") UUID mapId,
+            @RequestParam("map_rank") int map_rank
+    ) {
+        try {
+            mapInfoService.addMaptoBanner(mapId,map_rank);
+            return renderSuccess();
+        }catch (Exception e){
+            return renderError(e.getMessage());
+        }
+    }
+
+    @GetMapping("/mapinfo/removeMapfromBanner")
+    public Object removeMapfromBanner(
+            @RequestParam("map_id") UUID mapId,
+            @RequestParam("map_rank") int map_rank
+    ) {
+        try {
+            mapInfoService.removeMapfromBanner(mapId,map_rank);
+            return renderSuccess();
+        }catch (Exception e){
+            return renderError(e.getMessage());
+        }
+    }
+
 }

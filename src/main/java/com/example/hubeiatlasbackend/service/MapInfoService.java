@@ -68,4 +68,17 @@ public class MapInfoService {
     public List<Map<String, Objects>> getBannerMaps() {
         return mapInfoMapper.getBannerMaps();
     }
+
+    public void updateBannerMapOrder(UUID mapId, int mapRank) {
+        mapInfoMapper.updateBannerMapOrder(mapId,mapRank);
+    }
+
+    public void addMaptoBanner(UUID mapId, int mapRank) {
+        mapInfoMapper.addMaptoBanner(mapId,mapRank);
+    }
+
+    public void removeMapfromBanner(UUID mapId, int mapRank) {
+        mapInfoMapper.removeMapfromBanner(mapId,mapRank);
+        mapInfoMapper.shiftBannerMapRanksAfterDelete(mapRank);
+    }
 }
