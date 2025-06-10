@@ -1,6 +1,7 @@
 package com.example.hubeiatlasbackend.service;
 
 import com.example.hubeiatlasbackend.config.LLMConfig;
+import com.example.hubeiatlasbackend.mapper.MapExtendsMapper;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -19,6 +20,9 @@ public class LLMService {
     @Resource
     private LLMConfig llmConfig;
 
+    @Resource
+    private MapExtendsMapper mapExtendsMapper;
+
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
 
@@ -28,182 +32,149 @@ public class LLMService {
     }
 
     /**
-     * 智能提取地理关键词 - 增强版
-     * @param userInput 用户输入的搜索内容
-     * @return 提取和扩展的关键词列表
+     * 智能匹配地图子项 - 核心方法
+     * @param userInput 用户输入的查询内容
+     * @return 匹配结果列表（按相关性降序排列）
      */
-    public List<String> extractGeoKeywords(String userInput) {
+    public List<MapMatchResult> intelligentMapMatching(String userInput) {
         try {
-            log.info("开始智能关键词提取，用户输入: {}", userInput);
+            log.info("开始智能地图匹配，用户输入: {}", userInput);
 
-            // 第一步：基础关键词提取
-            String basicPrompt = buildBasicKeywordPrompt(userInput);
-            String basicResponse = callLLM(basicPrompt);
-            List<String> basicKeywords = parseKeywordsFromResponse(basicResponse);
-            log.info("基础关键词: {}", basicKeywords);
+            // 获取所有子项名称数据
+            List<String> allSubitemNames = mapExtendsMapper.getAllSubitemNames();
+            log.info("获取到{}个子项名称用于匹配", allSubitemNames.size());
 
-            // 第二步：地理关联扩展
-            String expandPrompt = buildGeographicExpansionPrompt(userInput, basicKeywords);
-            String expandResponse = callLLM(expandPrompt);
-            List<String> expandedKeywords = parseKeywordsFromResponse(expandResponse);
-            log.info("扩展关键词: {}", expandedKeywords);
+            if (allSubitemNames.isEmpty()) {
+                log.warn("数据库中没有子项名称数据");
+                return Collections.emptyList();
+            }
 
-            // 第三步：合并去重并优化
-            List<String> finalKeywords = mergeAndOptimizeKeywords(basicKeywords, expandedKeywords);
-            log.info("最终关键词: {}", finalKeywords);
+            // 构建智能匹配提示词
+            String matchingPrompt = buildIntelligentMatchingPrompt(userInput, allSubitemNames);
 
-            return finalKeywords;
+            // 调用大模型进行匹配分析
+            String llmResponse = callLLM(matchingPrompt);
+
+            // 解析匹配结果
+            List<MapMatchResult> matchResults = parseMatchingResults(llmResponse);
+
+            log.info("匹配完成，返回{}个结果", matchResults.size());
+            return matchResults;
+
         } catch (Exception e) {
-            log.error("智能关键词提取失败: {}", e.getMessage(), e);
-            // 降级处理：使用简单关键词提取
-            return fallbackKeywordExtraction(userInput);
+            log.error("智能地图匹配失败: {}", e.getMessage(), e);
+            return Collections.emptyList();
         }
     }
 
     /**
-     * 构建基础关键词提取提示词
+     * 构建智能匹配提示词
      */
-    private String buildBasicKeywordPrompt(String userInput) {
-        return String.format(
-                "作为地理信息专家，请从用户输入中提取核心地理关键词：\n\n" +
-                        "用户输入：%s\n\n" +
-                        "提取要求：\n" +
-                        "1. 直接的地名（省、市、县、区、乡镇、村庄）\n" +
-                        "2. 自然地理要素（山、河、湖、海、岛屿、平原、盆地）\n" +
-                        "3. 资源类型（森林、矿产、水资源、土地、湿地）\n" +
-                        "4. 地理概念（流域、山脉、地区、区域）\n\n" +
-                        "输出格式：只返回关键词，用逗号分隔，最多8个\n" +
-                        "关键词：",
-                userInput
-        );
-    }
-
-    /**
-     * 构建地理关联扩展提示词
-     */
-    private String buildGeographicExpansionPrompt(String userInput, List<String> basicKeywords) {
-        String keywordStr = String.join("、", basicKeywords);
+    private String buildIntelligentMatchingPrompt(String userInput, List<String> subitemNames) {
+        // 为了避免提示词过长，采样处理
+        List<String> sampledNames = sampleSubitemNames(subitemNames, 100);
+        String namesList = String.join("、", sampledNames);
 
         return String.format(
-                "作为地理专家，基于用户查询和已提取的关键词，进行地理关联扩展：\n\n" +
-                        "原始查询：%s\n" +
-                        "已提取关键词：%s\n\n" +
-                        "请扩展相关的地理实体：\n" +
-                        "1. 如果涉及\"长江流域\"，列出湖北省内长江沿线城市：武汉、宜昌、荆州、黄石、鄂州、咸宁、仙桃、潜江、天门\n" +
-                        "2. 如果涉及\"汉江流域\"，列出相关城市：襄阳、十堰、随州、孝感\n" +
-                        "3. 如果涉及\"鄂西\"或\"西部\"，列出：恩施、宜昌、十堰、神农架\n" +
-                        "4. 如果涉及\"鄂东\"或\"东部\"，列出：黄石、鄂州、黄冈、咸宁\n" +
-                        "5. 如果涉及\"鄂北\"或\"北部\"，列出：襄阳、十堰、随州、孝感\n" +
-                        "6. 如果涉及\"鄂南\"或\"南部\"，列出：咸宁、通山、崇阳、嘉鱼\n" +
-                        "7. 如果涉及\"江汉平原\"，列出：荆州、荆门、仙桃、潜江、天门、监利\n" +
-                        "8. 如果涉及\"大别山\"，列出：黄冈、红安、麻城、罗田、英山\n" +
-                        "9. 如果涉及\"武陵山\"，列出：恩施、利川、建始、巴东\n" +
-                        "10. 如果涉及\"森林\"、\"林业\"，重点关注：神农架、恩施、宜昌、十堰\n" +
-                        "11. 如果涉及\"矿产\"、\"采矿\"，重点关注：黄石、大冶、鄂州、随州\n" +
-                        "12. 如果涉及\"水资源\"、\"湖泊\"，重点关注：武汉、洪湖、监利、仙桃\n" +
-                        "13. 同义词扩展：湖北→鄂、武汉→江城、宜昌→三峡、荆州→古城\n\n" +
-                        "输出要求：\n" +
-                        "- 只输出与原查询相关的扩展关键词\n" +
-                        "- 优先湖北省内地名\n" +
-                        "- 包含可能的同义词和别名\n" +
-                        "- 用逗号分隔，最多15个\n\n" +
-                        "扩展关键词：",
-                userInput, keywordStr
+                "你是一个地理信息专家，需要根据用户的查询意图，从湖北省地图数据库中找出最相关的地图子项。\n\n" +
+                        "用户查询：%s\n\n" +
+                        "可选的地图子项名称列表：\n%s\n\n" +
+                        "任务要求：\n" +
+                        "1. 深度理解用户的查询意图（可能是找特定地区、资源类型、地理要素等）\n" +
+                        "2. 从上述列表中选出与用户查询最相关的地图子项\n" +
+                        "3. 按相关性从高到低排序（最多返回10个）\n" +
+                        "4. 为每个匹配项给出相关性评分（1-10分，10分最相关）\n\n" +
+                        "分析原则：\n" +
+                        "- 优先匹配直接相关的地名和地理要素\n" +
+                        "- 考虑同义词、别称和相关概念\n" +
+                        "- 理解用户可能的隐含需求\n" +
+                        "- 如果用户查询比较泛，提供多样化的相关选项\n\n" +
+                        "输出格式（严格按此格式）：\n" +
+                        "匹配结果：\n" +
+                        "1. [子项名称] - [相关性评分]\n" +
+                        "2. [子项名称] - [相关性评分]\n" +
+                        "...\n\n" +
+                        "请开始分析匹配：",
+                userInput, namesList
         );
     }
 
     /**
-     * 合并和优化关键词
+     * 采样子项名称（避免提示词过长）
      */
-    private List<String> mergeAndOptimizeKeywords(List<String> basicKeywords, List<String> expandedKeywords) {
-        Set<String> keywordSet = new LinkedHashSet<>();
-
-        // 添加基础关键词（优先级最高）
-        keywordSet.addAll(basicKeywords);
-
-        // 添加扩展关键词
-        keywordSet.addAll(expandedKeywords);
-
-        // 清理和标准化
-        List<String> cleanedKeywords = keywordSet.stream()
-                .map(this::cleanKeyword)
-                .filter(keyword -> keyword.length() >= 2 && keyword.length() <= 10) // 过滤长度
-                .filter(this::isValidGeoKeyword) // 过滤无效词汇
-                .limit(20) // 限制总数
-                .collect(Collectors.toList());
-
-        return cleanedKeywords;
-    }
-
-    /**
-     * 清理关键词
-     */
-    private String cleanKeyword(String keyword) {
-        if (keyword == null) return "";
-
-        return keyword.trim()
-                .replaceAll("[\"\"''()（）\\[\\]【】]", "") // 移除引号和括号
-                .replaceAll("\\s+", "") // 移除空格
-                .replaceAll("[的地得]$", ""); // 移除词尾助词
-    }
-
-    /**
-     * 验证是否为有效的地理关键词
-     */
-    private boolean isValidGeoKeyword(String keyword) {
-        if (keyword == null || keyword.trim().isEmpty()) {
-            return false;
+    private List<String> sampleSubitemNames(List<String> allNames, int maxCount) {
+        if (allNames.size() <= maxCount) {
+            return allNames;
         }
 
-        // 过滤无意义词汇
-        Set<String> stopWords = Set.of(
-                "情况", "状况", "分布", "覆盖", "资源", "信息", "数据", "查看", "了解",
-                "显示", "地图", "图幅", "方面", "相关", "有关", "关于", "问题", "怎么样"
-        );
+        // 简单采样策略：保留前面部分 + 随机采样
+        List<String> sampled = new ArrayList<>();
+        sampled.addAll(allNames.subList(0, Math.min(50, allNames.size())));
 
-        return !stopWords.contains(keyword);
+        List<String> remaining = allNames.subList(50, allNames.size());
+        Collections.shuffle(remaining);
+        sampled.addAll(remaining.subList(0, Math.min(maxCount - 50, remaining.size())));
+
+        return sampled;
     }
 
     /**
-     * 降级处理：简单关键词提取
+     * 解析匹配结果
      */
-    private List<String> fallbackKeywordExtraction(String userInput) {
-        log.info("使用降级关键词提取");
+    private List<MapMatchResult> parseMatchingResults(String response) {
+        List<MapMatchResult> results = new ArrayList<>();
 
-        // 简单的地名和关键词提取
-        List<String> fallbackKeywords = new ArrayList<>();
+        if (response == null || response.trim().isEmpty()) {
+            return results;
+        }
 
-        // 常见地名匹配
-        String[] commonPlaces = {
-                "武汉", "宜昌", "襄阳", "荆州", "黄石", "十堰", "孝感", "荆门", "鄂州", "黄冈",
-                "咸宁", "随州", "恩施", "仙桃", "潜江", "天门", "神农架", "长江", "汉江", "洞庭湖"
-        };
+        try {
+            String[] lines = response.split("\n");
 
-        for (String place : commonPlaces) {
-            if (userInput.contains(place)) {
-                fallbackKeywords.add(place);
+            for (String line : lines) {
+                line = line.trim();
+
+                // 跳过空行和标题行
+                if (line.isEmpty() || line.startsWith("匹配结果") || line.startsWith("请开始")) {
+                    continue;
+                }
+
+                // 匹配格式：数字. [子项名称] - [评分]
+                if (line.matches("^\\d+\\.\\s*.+\\s*-\\s*\\d+.*")) {
+                    try {
+                        // 移除序号
+                        String content = line.replaceFirst("^\\d+\\.\\s*", "");
+
+                        // 分割名称和评分
+                        String[] parts = content.split("\\s*-\\s*");
+                        if (parts.length >= 2) {
+                            String subitemName = parts[0].trim();
+
+                            // 提取评分数字
+                            String scoreStr = parts[1].replaceAll("[^\\d]", "");
+                            if (!scoreStr.isEmpty()) {
+                                int score = Integer.parseInt(scoreStr);
+                                score = Math.max(1, Math.min(10, score)); // 限制在1-10范围
+
+                                results.add(new MapMatchResult(subitemName, score));
+                            }
+                        }
+                    } catch (Exception e) {
+                        log.warn("解析匹配行失败: {}", line);
+                    }
+                }
             }
+
+            // 按评分降序排序
+            results.sort((a, b) -> Integer.compare(b.getScore(), a.getScore()));
+
+        } catch (Exception e) {
+            log.error("解析匹配结果失败: {}", e.getMessage(), e);
         }
 
-        // 关键资源词汇
-        String[] resourceWords = {"森林", "矿产", "水资源", "土地", "湿地", "湖泊", "山脉"};
-        for (String resource : resourceWords) {
-            if (userInput.contains(resource)) {
-                fallbackKeywords.add(resource);
-            }
-        }
-
-        // 如果没有匹配到，使用分词
-        if (fallbackKeywords.isEmpty()) {
-            fallbackKeywords.addAll(Arrays.asList(userInput.trim().split("\\s+")));
-        }
-
-        return fallbackKeywords.stream().limit(10).collect(Collectors.toList());
+        return results;
     }
 
-    /**
-     * 调用阿里云百炼API
-     */
     private String callLLM(String prompt) {
         try {
             // 构建请求体
@@ -222,8 +193,8 @@ public class LLMService {
             requestBody.put("input", input);
 
             Map<String, Object> parameters = new HashMap<>();
-            parameters.put("temperature", 0.2); // 稍微提高创造性
-            parameters.put("max_tokens", 200); // 增加token数量以支持更多扩展
+            parameters.put("temperature", 0.1); // 降低随机性，提高一致性
+            parameters.put("max_tokens", 800); // 增加token以支持更多匹配结果
             requestBody.put("parameters", parameters);
 
             // 设置请求头
@@ -297,36 +268,55 @@ public class LLMService {
         }
     }
 
-    /**
-     * 从LLM响应中解析关键词
-     */
-    private List<String> parseKeywordsFromResponse(String response) {
-        if (response == null || response.trim().isEmpty()) {
-            return new ArrayList<>();
+    public List<String> getAllSubitemNames() {
+        try {
+            return mapExtendsMapper.getAllSubitemNames();
+        } catch (Exception e) {
+            log.error("获取所有子项名称失败: {}", e.getMessage(), e);
+            return Collections.emptyList();
+        }
+    }
+
+    public List<Map<String, Object>> getMapExtendsBySubitemName(String subitemName) {
+        try {
+            return mapExtendsMapper.getMapExtendsBySubitemName(subitemName);
+        } catch (Exception e) {
+            log.error("根据子项名称获取地图扩展信息失败: {}, subitemName: {}", e.getMessage(), subitemName, e);
+            return Collections.emptyList();
+        }
+    }
+
+    public static class MapMatchResult {
+        private String subitemName;
+        private int score;
+
+        public MapMatchResult(String subitemName, int score) {
+            this.subitemName = subitemName;
+            this.score = score;
         }
 
-        // 清理响应内容
-        String cleanResponse = response.trim();
-
-        // 移除可能的前缀
-        if (cleanResponse.startsWith("关键词：")) {
-            cleanResponse = cleanResponse.substring(4);
-        }
-        if (cleanResponse.startsWith("扩展关键词：")) {
-            cleanResponse = cleanResponse.substring(6);
+        public String getSubitemName() {
+            return subitemName;
         }
 
-        // 按逗号或顿号分割
-        String[] keywords = cleanResponse.split("[,，、]");
-        List<String> result = new ArrayList<>();
-
-        for (String keyword : keywords) {
-            String cleanKeyword = cleanKeyword(keyword);
-            if (!cleanKeyword.isEmpty() && isValidGeoKeyword(cleanKeyword)) {
-                result.add(cleanKeyword);
-            }
+        public void setSubitemName(String subitemName) {
+            this.subitemName = subitemName;
         }
 
-        return result;
+        public int getScore() {
+            return score;
+        }
+
+        public void setScore(int score) {
+            this.score = score;
+        }
+
+        @Override
+        public String toString() {
+            return "MapMatchResult{" +
+                    "subitemName='" + subitemName + '\'' +
+                    ", score=" + score +
+                    '}';
+        }
     }
 }
