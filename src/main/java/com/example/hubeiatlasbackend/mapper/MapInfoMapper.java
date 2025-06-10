@@ -64,8 +64,24 @@ public interface MapInfoMapper {
 
     @Update("update topics set title = #{name}, description = #{description} where topic_id = #{topicId}")
     void editGroupInfo(@Param("topicId")UUID topicId, @Param("name")String name, @Param("description")String description);
-    
+
     @Select("select * from banners a left join maps b on a.map_id = b.map_id\n" +
             "ORDER BY a.map_rank")
     List<Map<String, Objects>> getBannerMaps();
+
+    @Update("update banners set map_rank = #{mapRank} where map_id = #{mapId}")
+    void updateBannerMapOrder(@Param("mapId") UUID mapId,@Param("mapRank") int mapRank);
+
+    @Insert("insert into banners(\"map_id\",\"map_rank\") values(#{mapId},#{mapRank})")
+    void addMaptoBanner(@Param("mapId") UUID mapId,@Param("mapRank") int mapRank);
+
+    @Select("delete from banners where map_id = #{mapId} and map_rank = #{mapRank}")
+    void removeMapfromBanner(@Param("mapId") UUID mapId,@Param("mapRank") int mapRank);
+
+    @Update("""
+        UPDATE banners
+        SET map_rank = map_rank - 1
+        WHERE map_rank > #{mapRank}
+    """)
+    void shiftBannerMapRanksAfterDelete(@Param("mapRank") int mapRank);
 }
