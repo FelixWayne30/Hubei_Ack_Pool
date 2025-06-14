@@ -27,8 +27,8 @@ public class AuthInterceptor implements HandlerInterceptor {
 //            return true;
 //        }
 //     设置图片白名单
-      String uri = request.getRequestURI();
-        if (uri.startsWith("/image/")) {
+        String uri = request.getRequestURI();
+        if (uri.startsWith("/image/") || uri.startsWith("/subimage/")) {
             return true;
         }
 
