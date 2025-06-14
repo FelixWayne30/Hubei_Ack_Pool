@@ -30,6 +30,14 @@ public interface MapInfoMapper {
             "ORDER BY a.map_rank")
     List<Map<String, Objects>> getMapsByGroupId(@Param("group_id") UUID group_id);
 
+    @Select("SELECT t.topic_id, t.title, t.description " +
+            "FROM topics t " +
+            "INNER JOIN topic_map tm ON t.topic_id = tm.topic_id " +
+            "WHERE tm.map_id = #{mapId} " +
+            "ORDER BY tm.map_rank " +
+            "LIMIT 1")
+    List<Map<String, Object>> getTopicByMapId(@Param("mapId") UUID mapId);
+
     @Select("select * from maps where map_id = #{map_id}")
     List<Map<String, Objects>> getMapsByMapId(@Param("map_id") UUID mapId);
 

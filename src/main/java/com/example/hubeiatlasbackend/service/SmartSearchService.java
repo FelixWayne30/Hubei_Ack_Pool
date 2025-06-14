@@ -1,6 +1,7 @@
 package com.example.hubeiatlasbackend.service;
 
 import com.example.hubeiatlasbackend.mapper.SubmapsMapper;
+import com.example.hubeiatlasbackend.mapper.MapInfoMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -18,24 +19,20 @@ public class SmartSearchService {
     @Resource
     private SubmapsMapper submapsMapper;
 
-    /**
-     * AI智能搜索（唯一搜索入口）
-     * @param query 用户搜索查询
-     * @param page 页码
-     * @param size 每页大小
-     * @return AI搜索结果
-     */
+    @Resource
+    private MapInfoMapper mapInfoMapper;
+
     public Map<String, Object> aiSearch(String query, int page, int size) {
         try {
-            log.info("开始AI智能搜索: query={}, page={}, size={}", query, page, size);
+            log.info("开始智能搜索: query={}, page={}, size={}", query, page, size);
 
             Map<String, Object> result = new HashMap<>();
 
             // AI智能匹配搜索
             List<LLMService.SmartSearchResult> aiResults = llmService.intelligentMapMatching(query);
-            log.info("AI匹配返回{}个结果", aiResults.size());
+            log.info("匹配返回{}个结果", aiResults.size());
 
-            // 转换AI结果为统一格式
+            // 转换AI结果为统一格式，并获取专题信息
             List<Map<String, Object>> searchResults = new ArrayList<>();
             for (LLMService.SmartSearchResult aiResult : aiResults) {
                 Map<String, Object> item = new HashMap<>();
@@ -45,6 +42,19 @@ public class SmartSearchService {
                 item.put("type", aiResult.getSubitemType());
                 item.put("relevance_score", aiResult.getScore());
                 item.put("subitem_name", aiResult.getSubitemName());
+
+                try {
+                    UUID mapId = UUID.fromString(aiResult.getMapId());
+                    List<Map<String, Object>> topicInfo = mapInfoMapper.getTopicByMapId(mapId);
+                    if (!topicInfo.isEmpty()) {
+                        Map<String, Object> topic = topicInfo.get(0);
+                        item.put("topic_id", topic.get("topic_id").toString());
+                        item.put("topic_name", topic.get("title"));
+                    }
+                } catch (Exception e) {
+                    log.warn("获取地图{}的专题信息失败: {}", aiResult.getMapId(), e.getMessage());
+                }
+
                 searchResults.add(item);
             }
 
@@ -64,18 +74,15 @@ public class SmartSearchService {
             result.put("size", size);
             result.put("results", pagedResults);
 
-            log.info("AI智能搜索完成，返回{}个结果", pagedResults.size());
+            log.info("智能搜索完成，返回{}个结果", pagedResults.size());
             return result;
 
         } catch (Exception e) {
-            log.error("AI智能搜索失败: {}", e.getMessage(), e);
-            throw new RuntimeException("AI智能搜索失败", e);
+            log.error("智能搜索失败: {}", e.getMessage(), e);
+            throw new RuntimeException("智能搜索失败", e);
         }
     }
 
-    /**
-     * 获取搜索建议（基于子项名称）
-     */
     public List<String> getSearchSuggestions(String query, int limit) {
         try {
             String searchQuery = "%" + query + "%";
