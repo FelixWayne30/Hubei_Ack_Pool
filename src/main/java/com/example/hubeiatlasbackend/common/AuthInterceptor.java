@@ -26,6 +26,11 @@ public class AuthInterceptor implements HandlerInterceptor {
 //                uri.startsWith("/protected-pictures")) { //若你希望图片自己进行授权
 //            return true;
 //        }
+//     设置图片白名单
+      String uri = request.getRequestURI();
+        if (uri.startsWith("/image/")) {
+            return true;
+        }
 
         if (!isAuthorized(request)) {
             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
