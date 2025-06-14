@@ -1,6 +1,7 @@
 package com.example.hubeiatlasbackend.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import com.example.hubeiatlasbackend.service.MapInfoService;
 import org.springframework.web.multipart.MultipartFile;
@@ -41,10 +42,21 @@ public class MapInfoController extends BaseController {
         }
     }
 
-    @GetMapping("/mapinfo/maps/{groupid}")
-    public Object getMapsByGroupId(@PathVariable("groupid") UUID groupId) {
+    @GetMapping("/mapinfo/getMapsByTopic")
+    public Object getMapsByGroupId(
+            @RequestParam(name="groupid",required = false) UUID groupId,
+            @RequestParam(name="group",required = false) String group
+            ) {
         try {
-            return renderSuccess(mapInfoService.getMapsByGroupId(groupId));
+            if(groupId != null && !groupId.equals(new UUID(0L, 0L))){
+                return renderSuccess(mapInfoService.getMapsByGroupId(groupId));
+            }
+            else if(group != null && !group.trim().isEmpty()){
+                return renderSuccess(mapInfoService.getMapsByGroupName(group));
+            }
+            else{
+                return renderError(HttpStatus.BAD_REQUEST.toString());
+            }
         }catch (Exception e){
             return renderError(e.getMessage());
         }

@@ -81,4 +81,6 @@ public class MapInfoService {
         mapInfoMapper.removeMapfromBanner(mapId,mapRank);
         mapInfoMapper.shiftBannerMapRanksAfterDelete(mapRank);
     }
+
+    public List<Map<String, Objects>> getMapsByGroupName(String group) { return mapInfoMapper.getMapsByGroupName(group); }
 }

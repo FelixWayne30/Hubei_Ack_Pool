@@ -84,4 +84,9 @@ public interface MapInfoMapper {
         WHERE map_rank > #{mapRank}
     """)
     void shiftBannerMapRanksAfterDelete(@Param("mapRank") int mapRank);
+
+    @Select("select * from  maps " +
+            "where origin_topic = #{groupname} \n" +
+            "ORDER BY map_code")
+    List<Map<String, Objects>> getMapsByGroupName(@Param("groupname") String group);
 }
