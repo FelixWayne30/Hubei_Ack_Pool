@@ -4,16 +4,22 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import com.example.hubeiatlasbackend.service.MapInfoService;
-import org.springframework.web.multipart.MultipartFile;
+import com.example.hubeiatlasbackend.service.SmartSearchService;
 
-import java.awt.font.MultipleMaster;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
 @CrossOrigin
 public class MapInfoController extends BaseController {
+
     @Autowired
     private MapInfoService mapInfoService;
+
+    @Autowired
+    private SmartSearchService smartSearchService;
+
 
     @GetMapping("/mapinfo/topics")
     public Object getTopicsController(){
@@ -57,6 +63,15 @@ public class MapInfoController extends BaseController {
             else{
                 return renderError(HttpStatus.BAD_REQUEST.toString());
             }
+        }catch (Exception e){
+            return renderError(e.getMessage());
+        }
+    }
+
+    @GetMapping("/mapinfo/bannerMaps")
+    public Object getBannerMapsController(){
+        try {
+            return renderSuccess(mapInfoService.getBannerMaps());
         }catch (Exception e){
             return renderError(e.getMessage());
         }
@@ -169,26 +184,6 @@ public class MapInfoController extends BaseController {
         }
     }
 
-    @GetMapping("/mapinfo/search")
-    public Object searchMaps(@RequestParam("query") String query,
-                             @RequestParam(value = "page", defaultValue = "1") int page,
-                             @RequestParam(value = "size", defaultValue = "20") int size) {
-        try {
-            return renderSuccess(mapInfoService.searchMaps(query, page, size));
-        } catch (Exception e) {
-            return renderError(e.getMessage());
-        }
-    }
-
-    @GetMapping("/mapinfo/bannerMaps")
-    public Object getBannerMapsController(){
-        try {
-            return renderSuccess(mapInfoService.getBannerMaps());
-        }catch (Exception e){
-            return renderError(e.getMessage());
-        }
-    }
-
     @GetMapping("/mapinfo/updateBannerMapOrder")
     public Object updateBannerMapOrder(
             @RequestParam("mapId") UUID mapId,
@@ -228,4 +223,15 @@ public class MapInfoController extends BaseController {
         }
     }
 
+    @GetMapping("/mapinfo/search")
+    public Object aiSearch(@RequestParam("query") String query,
+                           @RequestParam(value = "page", defaultValue = "1") int page,
+                           @RequestParam(value = "size", defaultValue = "10") int size) {
+        try {
+            Map<String, Object> result = smartSearchService.aiSearch(query, page, size);
+            return renderSuccess("智能搜索完成", result);
+        } catch (Exception e) {
+            return renderError("智能搜索失败: " + e.getMessage());
+        }
+    }
 }
