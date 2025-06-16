@@ -223,6 +223,24 @@ public class MapInfoController extends BaseController {
         }
     }
 
+    @GetMapping("/mapinfo/getTopicByMapId/{mapId}")
+    public Object getTopicByMapId(@PathVariable("mapId") String mapIdStr) {
+        try {
+            UUID mapId = UUID.fromString(mapIdStr);
+            List<Map<String, Object>> topicInfo = mapInfoService.getTopicByMapId(mapId);
+
+            if (topicInfo.isEmpty()) {
+                return renderSuccess("该地图暂无专题信息", null);
+            }
+
+            return renderSuccess(topicInfo.get(0));
+        } catch (IllegalArgumentException e) {
+            return renderError("地图ID格式错误");
+        } catch (Exception e) {
+            return renderError(e.getMessage());
+        }
+    }
+
     @GetMapping("/mapinfo/search")
     public Object aiSearch(@RequestParam("query") String query,
                            @RequestParam(value = "page", defaultValue = "1") int page,

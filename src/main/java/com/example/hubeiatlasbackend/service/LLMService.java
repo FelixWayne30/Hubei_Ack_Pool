@@ -11,7 +11,6 @@ import org.springframework.web.client.RestTemplate;
 
 import javax.annotation.Resource;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -34,7 +33,7 @@ public class LLMService {
     /**
      * 智能匹配地图子项 - 核心方法
      * @param userInput 用户输入的查询内容
-     * @return 匹配结果列表（按相关性降序排列）
+     * @return 匹配结果列表（按相关性降序排列，仅返回评分>5的结果）
      */
     public List<SmartSearchResult> intelligentMapMatching(String userInput) {
         try {
@@ -67,9 +66,6 @@ public class LLMService {
         }
     }
 
-    /**
-     * 解析匹配结果并丰富详细信息
-     */
     private List<SmartSearchResult> parseAndEnrichMatchingResults(String response) {
         List<SmartSearchResult> results = new ArrayList<>();
 
@@ -105,22 +101,28 @@ public class LLMService {
                                 int score = Integer.parseInt(scoreStr);
                                 score = Math.max(1, Math.min(10, score)); // 限制在1-10范围
 
-                                // 从数据库获取详细信息
-                                List<Map<String, Object>> submapDetails = submapsMapper.getSubmapsBySubitemName(subitemName);
+                                // 只处理评分大于5分的结果
+                                if (score > 5) {
+                                    // 从数据库获取详细信息
+                                    List<Map<String, Object>> submapDetails = submapsMapper.getSubmapsBySubitemName(subitemName);
 
-                                if (!submapDetails.isEmpty()) {
-                                    // 可能一个子项对应多个地图，取第一个
-                                    Map<String, Object> detail = submapDetails.get(0);
+                                    if (!submapDetails.isEmpty()) {
+                                        // 可能一个子项对应多个地图，取第一个
+                                        Map<String, Object> detail = submapDetails.get(0);
 
-                                    SmartSearchResult searchResult = new SmartSearchResult();
-                                    searchResult.setSubitemName(subitemName);
-                                    searchResult.setScore(score);
-                                    searchResult.setMapId(detail.get("map_id").toString());
-                                    searchResult.setMapTitle(detail.get("map_title").toString());
-                                    searchResult.setSubitemType(detail.get("shubitem_type") != null ?
-                                            detail.get("shubitem_type").toString() : "");
+                                        SmartSearchResult searchResult = new SmartSearchResult();
+                                        searchResult.setSubitemName(subitemName);
+                                        searchResult.setScore(score);
+                                        searchResult.setMapId(detail.get("map_id").toString());
+                                        searchResult.setMapTitle(detail.get("map_title").toString());
+                                        searchResult.setSubitemType(detail.get("shubitem_type") != null ?
+                                                detail.get("shubitem_type").toString() : "");
 
-                                    results.add(searchResult);
+                                        results.add(searchResult);
+                                        log.debug("添加匹配结果: {} (评分: {})", subitemName, score);
+                                    }
+                                } else {
+                                    log.debug("过滤低分结果: {} (评分: {})", subitemName, score);
                                 }
                             }
                         }
@@ -133,6 +135,8 @@ public class LLMService {
             // 按评分降序排序
             results.sort((a, b) -> Integer.compare(b.getScore(), a.getScore()));
 
+            log.info("过滤后的高质量匹配结果数量: {}", results.size());
+
         } catch (Exception e) {
             log.error("解析匹配结果失败: {}", e.getMessage(), e);
         }
@@ -140,9 +144,6 @@ public class LLMService {
         return results;
     }
 
-    /**
-     * 构建智能匹配提示词
-     */
     private String buildIntelligentMatchingPrompt(String userInput, List<String> subitemNames) {
         // 为了避免提示词过长，采样处理
         List<String> sampledNames = sampleSubitemNames(subitemNames, 100);
@@ -155,13 +156,15 @@ public class LLMService {
                         "任务要求：\n" +
                         "1. 深度理解用户的查询意图（可能是找特定地区、资源类型、地理要素等）\n" +
                         "2. 从上述列表中选出与用户查询最相关的地图子项\n" +
-                        "3. 按相关性从高到低排序（最多返回10个）\n" +
-                        "4. 为每个匹配项给出相关性评分（1-10分，10分最相关）\n\n" +
+                        "3. 按相关性从高到低排序，返回所有相关度较高的结果\n" +
+                        "4. 为每个匹配项给出相关性评分（1-10分，10分最相关）\n" +
+                        "5. 只推荐评分在6分及以上的高质量匹配结果\n\n" +
                         "分析原则：\n" +
                         "- 优先匹配直接相关的地名和地理要素\n" +
                         "- 考虑同义词、别称和相关概念\n" +
                         "- 理解用户可能的隐含需求\n" +
-                        "- 如果用户查询比较泛，提供多样化的相关选项\n\n" +
+                        "- 确保推荐结果的高质量和相关性\n" +
+                        "- 宁缺毋滥，只推荐真正相关的结果\n\n" +
                         "输出格式（严格按此格式）：\n" +
                         "匹配结果：\n" +
                         "1. [子项名称] - [相关性评分]\n" +
@@ -210,7 +213,7 @@ public class LLMService {
 
             Map<String, Object> parameters = new HashMap<>();
             parameters.put("temperature", 0.1); // 降低随机性，提高一致性
-            parameters.put("max_tokens", 800); // 增加token以支持更多匹配结果
+            parameters.put("max_tokens", 1200); // 增加token以支持更多匹配结果
             requestBody.put("parameters", parameters);
 
             // 设置请求头

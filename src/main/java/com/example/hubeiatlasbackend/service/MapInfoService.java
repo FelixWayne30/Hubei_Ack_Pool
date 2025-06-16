@@ -62,6 +62,10 @@ public class MapInfoService {
         return mapInfoMapper.searchMaps(searchQuery, size, offset);
     }
 
+    public List<Map<String, Object>> getTopicByMapId(UUID mapId) {
+        return mapInfoMapper.getTopicByMapId(mapId);
+    }
+
     public void editGroupInfo(UUID topicId, String name, String description) {
         mapInfoMapper.editGroupInfo(topicId,name,description);
     }
@@ -84,3 +88,5 @@ public class MapInfoService {
 
     public List<Map<String, Objects>> getMapsByGroupName(String group) { return mapInfoMapper.getMapsByGroupName(group); }
 }
+
+
