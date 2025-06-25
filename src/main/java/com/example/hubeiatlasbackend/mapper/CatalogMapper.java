@@ -9,6 +9,6 @@ import java.util.Map;
 @Mapper
 public interface CatalogMapper {
 
-    @Select("SELECT \"group\", subgroup, map FROM catalogs ORDER BY \"group\", subgroup, map")
+    @Select("SELECT \"group\", subgroup, map FROM catalogs ORDER BY map_code")
     List<Map<String, Object>> getCatalogs();
 }
