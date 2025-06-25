@@ -5,10 +5,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import com.example.hubeiatlasbackend.service.MapInfoService;
 import com.example.hubeiatlasbackend.service.SmartSearchService;
+import com.example.hubeiatlasbackend.mapper.SubmapsMapper;
 
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.HashMap;
 
 @RestController
 @CrossOrigin
@@ -19,6 +21,9 @@ public class MapInfoController extends BaseController {
 
     @Autowired
     private SmartSearchService smartSearchService;
+
+    @Autowired
+    private SubmapsMapper submapsMapper;
 
 
     @GetMapping("/mapinfo/topics")
@@ -223,21 +228,28 @@ public class MapInfoController extends BaseController {
         }
     }
 
-    @GetMapping("/mapinfo/getTopicByMapId/{mapId}")
-    public Object getTopicByMapId(@PathVariable("mapId") String mapIdStr) {
+    @GetMapping("/mapinfo/subitem/bounds/{subitemName}")
+    public Object getSubitemBounds(@PathVariable("subitemName") String subitemName) {
         try {
-            UUID mapId = UUID.fromString(mapIdStr);
-            List<Map<String, Object>> topicInfo = mapInfoService.getTopicByMapId(mapId);
+            List<Map<String, Object>> submapInfo = submapsMapper.getSubmapsBySubitemName(subitemName);
 
-            if (topicInfo.isEmpty()) {
-                return renderSuccess("该地图暂无专题信息", null);
+            if (submapInfo.isEmpty()) {
+                return renderError("未找到子项边界信息");
             }
 
-            return renderSuccess(topicInfo.get(0));
-        } catch (IllegalArgumentException e) {
-            return renderError("地图ID格式错误");
+            Map<String, Object> bounds = submapInfo.get(0);
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("subitem_name", bounds.get("subitem_name"));
+            result.put("xmin", bounds.get("extends_xmin"));
+            result.put("ymin", bounds.get("extends_ymin"));
+            result.put("xmax", bounds.get("extends_xmax"));
+            result.put("ymax", bounds.get("extends_ymax"));
+            result.put("map_id", bounds.get("map_id"));
+
+            return renderSuccess("获取边界信息成功", result);
         } catch (Exception e) {
-            return renderError(e.getMessage());
+            return renderError("获取边界信息失败: " + e.getMessage());
         }
     }
 
