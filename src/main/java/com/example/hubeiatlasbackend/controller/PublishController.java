@@ -78,4 +78,14 @@ public class PublishController extends BaseController{
             return renderError(e.getMessage());
         }
     }
+
+    @GetMapping("/publish/processImage")
+    public Object processImage(){
+        try {
+            PublishService.processImage();
+            return renderSuccess();
+        }catch (Exception e){
+            return renderError(e.getMessage());
+        }
+    }
 }
