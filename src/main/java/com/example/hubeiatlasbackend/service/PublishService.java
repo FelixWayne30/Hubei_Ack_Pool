@@ -256,4 +256,46 @@ public class PublishService {
 
         return new ResponseEntity<>(imageBytes, headers, HttpStatus.OK);
     }
+
+    private static void processDirectory(File inputDir, File outputDir) throws Exception {
+        for (File file : Objects.requireNonNull(inputDir.listFiles())) {
+            if (file.isDirectory()) {
+                // 递归处理子文件夹
+                File newDir = new File(outputDir, file.getName());
+                if (!newDir.exists()) {
+                    newDir.mkdirs();
+                }
+                processDirectory(file, newDir);
+            } else if (isJpg(file)) {
+                // 处理jpg图片
+                BufferedImage image = ImageIO.read(file);
+                if (image == null) {
+                    System.out.println("无法解码图片: " + file);
+                    continue;
+                }
+                File output = new File(outputDir, file.getName());
+                ImageIO.write(image, "jpg", output);
+                System.out.println("保存图片到: " + output);
+            }
+        }
+    }
+
+    private static boolean isJpg(File file) {
+        String name = file.getName().toLowerCase();
+        return name.endsWith(".jpg") ||
+                name.endsWith(".jpeg");
+
+    }
+
+    public void processImage() throws Exception {
+        File inputDir = new File("C:\\Users\\17643\\Desktop\\缩小压缩-富饶资源");
+
+        File outputDir = new File("C:\\Users\\17643\\Desktop\\缩小压缩-富饶资源2");
+
+        if (!outputDir.exists()) {
+            outputDir.mkdirs();
+        }
+
+        processDirectory(inputDir, outputDir);
+    }
 }
