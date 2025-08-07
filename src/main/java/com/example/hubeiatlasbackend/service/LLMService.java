@@ -307,6 +307,48 @@ public class LLMService {
     }
 
     /**
+     * 生成调色板用于风格迁移
+     */
+    public String generateColorPalette(String styleText) {
+        try {
+            log.info("开始生成调色板，风格描述: {}", styleText);
+
+            String prompt = buildColorPalettePrompt(styleText);
+            String response = callLLM(prompt);
+
+            log.info("调色板生成完成");
+            return response;
+
+        } catch (Exception e) {
+            log.error("调色板生成失败: {}", e.getMessage(), e);
+            throw new RuntimeException("调色板生成失败", e);
+        }
+    }
+
+    /**
+     * 调色板生成用Prompt
+     */
+    private String buildColorPalettePrompt(String styleText) {
+        return String.format("""
+        你是一位专业的地图与图像配色设计专家，请为我生成一组用于颜色转换的调色板，包含5个颜色，要求如下：
+        
+        - 每个颜色的明度从浅到深逐级递增，用于表达层次感；
+        - 每个颜色的饱和度保持适中或偏低，避免刺眼或过分鲜艳；
+        - 输出结果为5个RGB颜色值，排列顺序从最浅到最深；
+        - 风格要求统一、柔和、美观，适合用于地图、图像、数据可视化等领域的配色转换；
+        - 对地图配色的期望描述：%s
+        - 请仅返回如下JSON格式输出：
+        [
+            (R1, G1, B1),
+            (R2, G2, B2),
+            (R3, G3, B3),
+            (R4, G4, B4),
+            (R5, G5, B5)
+        ]
+        """, styleText);
+    }
+
+    /**
      * 智能搜索结果类
      */
     public static class SmartSearchResult {
