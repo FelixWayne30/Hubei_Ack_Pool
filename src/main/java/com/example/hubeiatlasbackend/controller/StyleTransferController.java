@@ -2,8 +2,15 @@ package com.example.hubeiatlasbackend.controller;
 
 import com.example.hubeiatlasbackend.service.StyleTransferService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.File;
+import java.nio.file.Files;
 import java.util.Map;
 
 @RestController
@@ -13,6 +20,9 @@ public class StyleTransferController extends BaseController {
 
     @Autowired
     private StyleTransferService styleTransferService;
+
+    @Value("${pictures.location}")
+    private String pictureLoc;
 
     /**
      * 生成调色板
@@ -27,6 +37,36 @@ public class StyleTransferController extends BaseController {
 
             Map<String, Object> result = styleTransferService.generatePalette(styleText);
             return renderSuccess("成功", result);
+        } catch (Exception e) {
+            return renderError(e.getMessage());
+        }
+    }
+
+    @PostMapping("/transform")
+    public Object generateTransfromImage(@RequestBody Map<String, String> request) {
+        try {
+            String imageFileName = request.get("imageFileName");
+            if (imageFileName == null || imageFileName.trim().isEmpty()) {
+                return renderError("请输入图片名称");
+            }
+            String styleText = request.get("styleText");
+            if (styleText == null || styleText.trim().isEmpty()) {
+                return renderError("请输入风格描述");
+            }
+
+            File file = new File(pictureLoc,imageFileName);
+            if (!file.exists()) {
+                return ResponseEntity.notFound().build();
+            }
+
+            byte[] bytes = Files.readAllBytes(file.toPath());
+            Map<String, Object> result = styleTransferService.generatePalette(styleText);
+
+            //TODO 色彩转换逻辑
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.IMAGE_JPEG);
+            return new ResponseEntity<>(bytes, headers, HttpStatus.OK);
         } catch (Exception e) {
             return renderError(e.getMessage());
         }
