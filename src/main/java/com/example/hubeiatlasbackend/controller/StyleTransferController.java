@@ -11,6 +11,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.io.File;
 import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -59,10 +61,10 @@ public class StyleTransferController extends BaseController {
                 return ResponseEntity.notFound().build();
             }
 
-            byte[] bytes = Files.readAllBytes(file.toPath());
             Map<String, Object> result = styleTransferService.generatePalette(styleText);
 
             //TODO 色彩转换逻辑
+            byte[] bytes = styleTransferService.applyStyle(file, (List<int[]>) result.get("colors"));
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.IMAGE_JPEG);
