@@ -2,13 +2,11 @@ package com.example.hubeiatlasbackend.controller;
 
 import com.example.hubeiatlasbackend.service.PublishService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.repository.query.Param;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
 
 @RestController
 @CrossOrigin
@@ -17,30 +15,39 @@ public class PublishController extends BaseController{
     private PublishService PublishService;
 
     @PostMapping("/publish/uploadMapFile")
-    public Object publishGeoTiff(
-        @RequestParam("file") MultipartFile file,
-        @RequestParam("type") String type
-    ){
+    public Object publishMap(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam("type") String type,
+            @RequestParam(value = "originTopic", required = false) String originTopic,
+            @RequestParam(value = "subTopic", required = false) String subTopic,
+            @RequestParam(value = "subitem", required = false) String subitem,
+            @RequestParam(value = "parentMapName", required = false) String parentMapName
+    ) {
         try {
-            String map_id = PublishService.insertBaseMapInfo(file,type);
-            return renderSuccess(PublishService.publishGeoTiff(file,map_id));
-        }catch (Exception e){
+            // 将前端上传的额外参数统一封装成 Map 或 DTO，传给 Service
+            Map<String, String> params = new HashMap<>();
+            params.put("originTopic", originTopic);
+            params.put("subTopic", subTopic);
+            params.put("subitem", subitem);
+            params.put("parentMapName", parentMapName);
+
+            PublishService.insertBaseMapInfo(file, type, params);
+
+            return renderSuccess();
+        } catch (Exception e) {
+            e.printStackTrace();
             return renderError(e.getMessage());
         }
     }
 
     @GetMapping("/publish/delete")
     public Object deleteMap(
-        @RequestParam("id") UUID id
+        @RequestParam("id") UUID id,
+        @RequestParam("name") String name
     ){
         try {
-            if(PublishService.deleteMapFile(id)){
-                PublishService.deleteMapInfo(id);
-                return renderSuccess("删除地图成功！");
-            }
-            else{
-                return renderError("删除地图失败！");
-            }
+            PublishService.deleteMapFile(id,name);
+            return renderSuccess("删除地图成功！");
         }catch (Exception e){
             return renderError(e.getMessage());
         }
@@ -56,33 +63,10 @@ public class PublishController extends BaseController{
         try {
             if (file != null && !file.isEmpty()) {
                 PublishService.editMapFile(file,id);
-                PublishService.deleteMapFile(id);
-                PublishService.publishGeoTiff(file,id.toString());
+                PublishService.deleteMapFile(id,name);
+                //PublishService.insertBaseMapInfo(file,id.toString());
             }
             PublishService.editMapInfo(id,name,description);
-            return renderSuccess();
-        }catch (Exception e){
-            return renderError(e.getMessage());
-        }
-    }
-
-    @GetMapping("/publish/getFullImage")
-    public Object getFullImage(
-            @RequestParam("id") UUID id,
-            @RequestParam("width") int width,
-            @RequestParam("height") int height
-    ){
-        try {
-            return PublishService.getFullImage(id,width,height);
-        }catch (Exception e){
-            return renderError(e.getMessage());
-        }
-    }
-
-    @GetMapping("/publish/processImage")
-    public Object processImage(){
-        try {
-            PublishService.processImage();
             return renderSuccess();
         }catch (Exception e){
             return renderError(e.getMessage());
