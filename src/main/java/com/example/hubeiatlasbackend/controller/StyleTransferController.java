@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import java.io.File;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 
@@ -56,19 +57,17 @@ public class StyleTransferController extends BaseController {
                 return renderError("请输入风格描述");
             }
 
-            File file = new File(pictureLoc,imageFileName);
+            File file = new File(pictureLoc,imageFileName+".jpg");
             if (!file.exists()) {
                 return ResponseEntity.notFound().build();
             }
 
             Map<String, Object> result = styleTransferService.generatePalette(styleText);
 
-            //TODO 色彩转换逻辑
+            //色彩转换逻辑
             byte[] bytes = styleTransferService.applyStyle(file, (List<int[]>) result.get("colors"));
-
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.IMAGE_JPEG);
-            return new ResponseEntity<>(bytes, headers, HttpStatus.OK);
+            String base64 = Base64.getEncoder().encodeToString(bytes);
+            return ResponseEntity.ok("data:image/png;base64," + base64);
         } catch (Exception e) {
             return renderError(e.getMessage());
         }
