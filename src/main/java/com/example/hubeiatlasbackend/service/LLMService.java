@@ -31,7 +31,7 @@ public class LLMService {
     }
 
     /**
-     * 智能匹配地图子项 - 核心方法
+     * 智能匹配地图子项
      * @param userInput 用户输入的查询内容
      * @return 匹配结果列表（按相关性降序排列，仅返回评分>5的结果）
      */
@@ -113,29 +113,41 @@ public class LLMService {
                                         SmartSearchResult searchResult = new SmartSearchResult();
                                         searchResult.setSubitemName(subitemName);
                                         searchResult.setScore(score);
-                                        searchResult.setMapId(detail.get("map_id").toString());
-                                        searchResult.setMapTitle(detail.get("map_title").toString());
-                                        searchResult.setSubitemType(detail.get("shubitem_type") != null ?
-                                                detail.get("shubitem_type").toString() : "");
+
+                                        if (detail.get("map_id") != null) {
+                                            searchResult.setMapId(detail.get("map_id").toString());
+                                        }
+
+                                        searchResult.setMapTitle(detail.get("map_title") != null ?
+                                                detail.get("map_title").toString() :
+                                                detail.get("parent_map_name").toString());
+
+                                        searchResult.setSubitemType(detail.get("subitem_type") != null ?
+                                                detail.get("subitem_type").toString() : "未知类型");
+
+                                        searchResult.setExtendsBounds(
+                                                detail.get("extends_xmin"),
+                                                detail.get("extends_ymin"),
+                                                detail.get("extends_xmax"),
+                                                detail.get("extends_ymax")
+                                        );
 
                                         results.add(searchResult);
-                                        log.debug("添加匹配结果: {} (评分: {})", subitemName, score);
+                                        log.debug("成功解析匹配结果: {} - 评分: {}", subitemName, score);
+                                    } else {
+                                        log.warn("未找到子项 '{}' 的详细信息", subitemName);
                                     }
-                                } else {
-                                    log.debug("过滤低分结果: {} (评分: {})", subitemName, score);
                                 }
                             }
                         }
                     } catch (Exception e) {
-                        log.warn("解析匹配行失败: {}", line);
+                        log.warn("解析行失败: {}, 错误: {}", line, e.getMessage());
                     }
                 }
             }
 
-            // 按评分降序排序
+            // 按评分降序排列
             results.sort((a, b) -> Integer.compare(b.getScore(), a.getScore()));
-
-            log.info("过滤后的高质量匹配结果数量: {}", results.size());
 
         } catch (Exception e) {
             log.error("解析匹配结果失败: {}", e.getMessage(), e);
@@ -143,6 +155,7 @@ public class LLMService {
 
         return results;
     }
+
 
     private String buildIntelligentMatchingPrompt(String userInput, List<String> subitemNames) {
         // 为了避免提示词过长，采样处理
@@ -196,7 +209,6 @@ public class LLMService {
 
     private String callLLM(String prompt) {
         try {
-            // 构建请求体
             Map<String, Object> requestBody = new HashMap<>();
             requestBody.put("model", llmConfig.getModel());
 
@@ -268,7 +280,6 @@ public class LLMService {
                 return outputNode.path("text").asText();
             }
 
-            // 兼容性：支持choices格式
             if (outputNode.has("choices")) {
                 JsonNode choicesNode = outputNode.path("choices");
                 if (choicesNode.isArray() && choicesNode.size() > 0) {
@@ -351,14 +362,24 @@ public class LLMService {
     /**
      * 智能搜索结果类
      */
+
     public static class SmartSearchResult {
         private String subitemName;
-        private int score;
+        private String subitemType;
         private String mapId;
         private String mapTitle;
-        private String subitemType;
+        private String parentMapName;  // 新增：父地图名称
+        private int score;
+        private Map<String, Object> extendsBounds;  // 边界信息
 
-        // Getters and Setters
+        public void setExtendsBounds(Object xmin, Object ymin, Object xmax, Object ymax) {
+            this.extendsBounds = new HashMap<>();
+            this.extendsBounds.put("xmin", xmin);
+            this.extendsBounds.put("ymin", ymin);
+            this.extendsBounds.put("xmax", xmax);
+            this.extendsBounds.put("ymax", ymax);
+        }
+
         public String getSubitemName() {
             return subitemName;
         }
