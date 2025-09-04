@@ -228,6 +228,9 @@ public class MapInfoController extends BaseController {
         }
     }
 
+    /**
+     * 获取子项边界信息
+     */
     @GetMapping("/mapinfo/subitem/bounds/{subitemName}")
     public Object getSubitemBounds(@PathVariable("subitemName") String subitemName) {
         try {
@@ -238,18 +241,71 @@ public class MapInfoController extends BaseController {
             }
 
             Map<String, Object> bounds = submapInfo.get(0);
-
             Map<String, Object> result = new HashMap<>();
+
+            // 子项基础信息
+            result.put("subitem_id", bounds.get("subitem_id"));
             result.put("subitem_name", bounds.get("subitem_name"));
+            result.put("subitem_type", bounds.get("subitem_type"));  // 修正后的字段名
+            result.put("parent_map_name", bounds.get("parent_map_name"));  // 新的关联字段
+
+            // 边界坐标
             result.put("xmin", bounds.get("extends_xmin"));
             result.put("ymin", bounds.get("extends_ymin"));
             result.put("xmax", bounds.get("extends_xmax"));
             result.put("ymax", bounds.get("extends_ymax"));
-            result.put("map_id", bounds.get("map_id"));
+
+
+            if (bounds.get("map_id") != null) {
+                result.put("map_id", bounds.get("map_id"));
+                result.put("map_title", bounds.get("map_title"));
+            }
 
             return renderSuccess("获取边界信息成功", result);
         } catch (Exception e) {
             return renderError("获取边界信息失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 获取地图的所有子项边界
+     */
+    @GetMapping("/mapinfo/map/{mapName}/subitems")
+    public Object getMapSubitems(@PathVariable("mapName") String mapName) {
+        try {
+            List<Map<String, Object>> subitems = submapsMapper.getSubmapBoundsByMapName(mapName);
+
+            if (subitems.isEmpty()) {
+                return renderError("未找到该地图的子项信息");
+            }
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("map_name", mapName);
+            result.put("subitems_count", subitems.size());
+            result.put("subitems", subitems);
+
+            return renderSuccess("获取子项列表成功", result);
+        } catch (Exception e) {
+            return renderError("获取子项列表失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 根据地图ID获取所有子项
+     */
+    @GetMapping("/mapinfo/map/{mapId}/subitems/byid")
+    public Object getMapSubitemsById(@PathVariable("mapId") UUID mapId) {
+        try {
+            List<Map<String, Object>> subitems = submapsMapper.getSubmapsByMapId(mapId);
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("map_id", mapId);
+            result.put("subitems_count", subitems.size());
+            result.put("subitems", subitems);
+
+            return renderSuccess("获取子项列表成功", result);
+        } catch (Exception e) {
+            return renderError("获取子项列表失败: " + e.getMessage());
         }
     }
 
