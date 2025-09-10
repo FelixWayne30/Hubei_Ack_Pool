@@ -65,9 +65,9 @@ public class StyleTransferController extends BaseController {
             Map<String, Object> result = styleTransferService.generatePalette(styleText);
 
             //色彩转换逻辑
-            byte[] bytes = styleTransferService.applyStyle(file, (List<int[]>) result.get("colors"));
-            String base64 = Base64.getEncoder().encodeToString(bytes);
-            return ResponseEntity.ok("data:image/png;base64," + base64);
+            String name = styleTransferService.applyStyle(file, (List<int[]>) result.get("colors"), pictureLoc);
+
+            return renderSuccess("成功", name);
         } catch (Exception e) {
             return renderError(e.getMessage());
         }

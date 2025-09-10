@@ -83,7 +83,7 @@ public class StyleTransferService {
         );
     }
 
-    public byte[] applyStyle(File imageInput, List<int[]> colorTable) throws IOException {
+    public String applyStyle(File imageInput, List<int[]> colorTable, String picloc) throws IOException {
         BufferedImage image = ImageIO.read(imageInput);
         int width = image.getWidth();
         int height = image.getHeight();
@@ -138,9 +138,16 @@ public class StyleTransferService {
             }
         }
 
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        ImageIO.write(image, "png", baos);
-        return baos.toByteArray();
+        String name = UUID.randomUUID().toString();
+        File dir = new File(picloc);
+        if (!dir.exists()) {
+            dir.mkdirs();
+        }
+        // 拼接完整文件路径
+        File outputFile = new File(dir, name + ".jpg");
+        // 写入文件
+        ImageIO.write(image, "jpg", outputFile);
+        return name;
 
     }
 
