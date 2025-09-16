@@ -4,8 +4,11 @@ import com.example.hubeiatlasbackend.mapper.CustomListMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+
 import javax.annotation.Resource;
 import java.util.*;
+
+import java.util.ArrayList;
 
 @Service
 @Slf4j
@@ -92,11 +95,28 @@ public class CustomListService {
         try {
             List<Map<String, Object>> results = customListMapper.getListDetail(listId);
 
-            if (results.isEmpty()) {
+            // 步骤1：检查结果列表是否为 null 或者真的为空
+            if (results == null || results.isEmpty()) {
                 return null;
             }
 
-            // 构建列表详情
+            // 步骤2：处理LEFT JOIN导致的“假空”情况
+            // 如果列表只有一个元素，并且其“map_id”为 null，说明这个图组没有图幅
+            if (results.size() == 1 && results.get(0).get("map_id") == null) {
+                // 在这种情况下，我们构建一个只包含图组基本信息，但maps列表为空的Map
+                Map<String, Object> listInfo = new HashMap<>();
+                Map<String, Object> firstRow = results.get(0);
+
+                listInfo.put("id", firstRow.get("list_id"));
+                listInfo.put("name", firstRow.get("name"));
+                listInfo.put("description", firstRow.get("description"));
+                listInfo.put("create_time", firstRow.get("create_time"));
+                // 关键：将maps字段设置为一个空的ArrayList
+                listInfo.put("maps", new ArrayList<>());
+                return listInfo;
+            }
+
+            // 步骤3：如果列表有图幅，按照原先的逻辑构建数据
             Map<String, Object> listInfo = new HashMap<>();
             Map<String, Object> firstRow = results.get(0);
 
@@ -108,6 +128,7 @@ public class CustomListService {
             // 构建地图列表
             List<Map<String, Object>> maps = new ArrayList<>();
             for (Map<String, Object> row : results) {
+                // 判断逻辑
                 if (row.get("map_id") != null) {
                     Map<String, Object> mapInfo = new HashMap<>();
                     mapInfo.put("map_id", row.get("map_id"));
@@ -124,7 +145,7 @@ public class CustomListService {
             listInfo.put("maps", maps);
             return listInfo;
         } catch (Exception e) {
-//            log.error("获取列表详情失败: listId={}, error={}", listId, e.getMessage());
+            log.error("获取列表详情失败: listId={}, error={}", listId, e.getMessage());
             throw new RuntimeException("获取列表详情失败");
         }
     }
