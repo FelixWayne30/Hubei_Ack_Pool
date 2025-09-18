@@ -50,12 +50,7 @@ public interface MapInfoMapper {
     @Select("delete from topic_map where topic_id = #{topicId} and map_id = #{mapId} and map_rank = #{mapRank}")
     void removeMapfromTopic(@Param("topicId") UUID topicId, @Param("mapId") UUID mapId,@Param("mapRank") int mapRank);
 
-    @Update("""
-        UPDATE topic_map
-        SET map_rank = map_rank - 1
-        WHERE topic_id = #{topicId}
-          AND map_rank > #{mapRank}
-    """)
+    @Update(" UPDATE topic_map SET map_rank = map_rank - 1 WHERE topic_id = #{topicId} AND map_rank > #{mapRank} ")
     void shiftMapRanksAfterDelete(@Param("topicId") UUID topicId, @Param("mapRank") int mapRank);
 
     @Delete("delete from topic_map where topic_id = #{topicId}")
@@ -86,11 +81,7 @@ public interface MapInfoMapper {
     @Select("delete from banners where map_id = #{mapId} and map_rank = #{mapRank}")
     void removeMapfromBanner(@Param("mapId") UUID mapId,@Param("mapRank") int mapRank);
 
-    @Update("""
-        UPDATE banners
-        SET map_rank = map_rank - 1
-        WHERE map_rank > #{mapRank}
-    """)
+    @Update("UPDATE banners SET map_rank = map_rank - 1 WHERE map_rank > #{mapRank} ")
     void shiftBannerMapRanksAfterDelete(@Param("mapRank") int mapRank);
 
     @Select("select * from  maps " +
